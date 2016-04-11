@@ -8,9 +8,9 @@ module.exports = function(sequelize, DataTypes) {
       defaultValue: '0',
       primaryKey: true
     },
-    pcord_id: {
+    khipu_id: {
       type: DataTypes.INTEGER(11),
-      allowNull: true
+      allowNull: false
     },
     struct: {
       type: DataTypes.STRING,

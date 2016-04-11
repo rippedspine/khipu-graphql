@@ -48,7 +48,7 @@ const Color = new GraphQLObjectType({
 
 const CordColor = new GraphQLObjectType({
   name: 'CordColor',
-  description: ' Cord Color',
+  description: 'Cord Color',
   fields: () => getFields({
     model: models.CordColor,
     additionalFields: {}
@@ -120,6 +120,42 @@ const KhipuNote = new GraphQLObjectType({
   fields: () => getFields({ model: models.KhipuNote })
 })
 
+const PrimaryCord = new GraphQLObjectType({
+  name: 'PrimaryCord',
+  fields: () => getFields({
+    model: models.PrimaryCord,
+    additionalFields: {
+      cords: {
+        type: new GraphQLList(Cord),
+        resolve (primaryCord) {
+          return primaryCord.getCords()
+        }
+      },
+      cordClusters: {
+        type: new GraphQLList(CordCluster),
+        resolve (primaryCord) {
+          return primaryCord.getCordClusters()
+        }
+      }
+    }
+  })
+})
+
+const CordCluster = new GraphQLObjectType({
+  name: 'CordCluster',
+  fields: () => getFields({
+    model: models.CordCluster,
+    additionalFields: {
+      cords: {
+        type: new GraphQLList(Cord),
+        resolve (cordCluster) {
+          return cordCluster.getCords()
+        }
+      }
+    }
+  })
+})
+
 const Khipu = new GraphQLObjectType({
   name: 'Khipu',
   description: 'Khipu',
@@ -130,6 +166,18 @@ const Khipu = new GraphQLObjectType({
         type: new GraphQLList(Cord),
         resolve (khipu) {
           return khipu.getCords()
+        }
+      },
+      primaryCord: {
+        type: PrimaryCord,
+        resolve (khipu) {
+          return models.PrimaryCord.findOne({ where: { khipu_id: khipu.id } })
+        }
+      },
+      cordClusters: {
+        type: new GraphQLList(CordCluster),
+        resolve (khipu) {
+          return khipu.getCordClusters()
         }
       },
       notes: {
@@ -217,13 +265,35 @@ const Query = new GraphQLObjectType({
         return models.KnotCluster.findAll({ where: args })
       }
     },
+    cordClusters: {
+      type: new GraphQLList(CordCluster),
+      args: {
+        'id': { type: GraphQLInt },
+        'khipu_id': { type: GraphQLInt },
+        'primary_cord_id': { type: GraphQLInt }
+      },
+      resolve (root, args) {
+        return models.CordCluster.findAll({ where: args })
+      }
+    },
     cords: {
       args: {
-        'id': { type: GraphQLInt }
+        'id': { type: GraphQLInt },
+        'khipu_id': { type: GraphQLInt }
       },
       type: new GraphQLList(Cord),
       resolve (root, args) {
         return models.Cord.findAll({ where: args })
+      }
+    },
+    primaryCords: {
+      args: {
+        'id': { type: GraphQLInt },
+        'khipu_id': { type: GraphQLInt }
+      },
+      type: new GraphQLList(PrimaryCord),
+      resolve (root, args) {
+        return models.PrimaryCord.findAll({ where: args })
       }
     }
   })
