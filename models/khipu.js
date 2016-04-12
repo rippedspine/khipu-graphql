@@ -86,7 +86,15 @@ module.exports = function(sequelize, DataTypes) {
       type: DataTypes.INTEGER(11),
       allowNull: true
     },
-    archive_num: {
+    archive_dc_id: {
+      type: DataTypes.INTEGER(11),
+      allowNull: true
+    },
+    museum_id: {
+      type: DataTypes.INTEGER(11),
+      allowNull: true
+    },
+    khipu_provenance_id: {
       type: DataTypes.INTEGER(11),
       allowNull: true
     },

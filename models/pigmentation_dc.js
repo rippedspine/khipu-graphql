@@ -2,6 +2,12 @@
 
 module.exports = function(sequelize, DataTypes) {
   return sequelize.define('pigmentation_dc', {
+    id: {
+      type: DataTypes.INTEGER(11),
+      allowNull: false,
+      defaultValue: '0',
+      primaryKey: true
+    },
     pigmentation_code: {
       type: DataTypes.STRING,
       allowNull: true

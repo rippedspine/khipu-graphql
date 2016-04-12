@@ -1,3 +1,5 @@
+'use strict'
+
 const graphql = require('graphql')
 const attributeFields = require('graphql-sequelize').attributeFields
 const _ = require('lodash')
@@ -7,6 +9,7 @@ const GraphQLFloat = graphql.GraphQLFloat
 const GraphQLList = graphql.GraphQLList
 const GraphQLInt = graphql.GraphQLInt
 const GraphQLSchema = graphql.GraphQLSchema
+const GraphQLString = graphql.GraphQLString
 
 const models = require('./db')
 
@@ -15,6 +18,17 @@ function getFields (params) {
     attributeFields(params.model, params.options || {}),
     params.additionalFields || {}
   )
+}
+
+function getArgs (params) {
+  var args = {}
+  args.where = _.omit(params, 'limit')
+
+  if (params.limit) {
+    args.limit = params.limit
+  }
+
+  return args
 }
 
 const RGBType = new GraphQLObjectType({
@@ -46,12 +60,72 @@ const Color = new GraphQLObjectType({
   })
 })
 
+const ColorOperator = new GraphQLObjectType({
+  name: 'ColorOperator',
+  fields: () => getFields({
+    model: models.ColorOperatorDc
+  })
+})
+
+const Pigmentation = new GraphQLObjectType({
+  name: 'Pigmentation',
+  fields: () => getFields({
+    model: models.PigmentationDc
+  })
+})
+
 const CordColor = new GraphQLObjectType({
   name: 'CordColor',
   description: 'Cord Color',
   fields: () => getFields({
     model: models.CordColor,
-    additionalFields: {}
+    additionalFields: {
+      operators: {
+        type: new GraphQLList(ColorOperator),
+        resolve (cordColor) {
+          var promises = []
+
+          for (let i = 1; i <= 5; i++) {
+            let operatorId = cordColor['operator_' + i]
+            if (operatorId) {
+              promises.push(models.ColorOperatorDc.findOne({ where: { operator: operatorId } }))
+            }
+          }
+
+          return Promise.all(promises)
+        }
+      },
+      pigmentation: {
+        type: new GraphQLList(Pigmentation),
+        resolve (cordColor) {
+          var promises = []
+
+          for (let i = 1; i <= 5; i++) {
+            let pigmentId = cordColor['pigmentation_cd_' + i]
+            if (pigmentId && pigmentId.length === 1) {
+              promises.push(models.PigmentationDc.findOne({ where: { pigmentation_code: pigmentId } }))
+            }
+          }
+
+          return Promise.all(promises)
+        }
+      },
+      colors: {
+        type: new GraphQLList(Color),
+        resolve (cordColor) {
+          var promises = []
+
+          for (let i = 1; i <= 5; i++) {
+            let colorId = cordColor['color_cd_' + i]
+            if (colorId && colorId.length) {
+              promises.push(models.ColorDc.findOne({ where: { id: colorId } }))
+            }
+          }
+
+          return Promise.all(promises)
+        }
+      }
+    }
   })
 })
 
@@ -61,6 +135,12 @@ const Cord = new GraphQLObjectType({
   fields: () => getFields({
     model: models.Cord,
     additionalFields: {
+      cordColor: {
+        type: CordColor,
+        resolve (cord) {
+          return models.CordColor.findOne({ where: { cord_id: cord.id } })
+        }
+      },
       knots: {
         type: new GraphQLList(Knot),
         resolve (cord) {
@@ -83,12 +163,26 @@ const Cord = new GraphQLObjectType({
   })
 })
 
+const KnotType = new GraphQLObjectType({
+  name: 'KnotType',
+  description: 'Knot type description',
+  fields: () => getFields({
+    model: models.KnotTypeDc
+  })
+})
+
 const Knot = new GraphQLObjectType({
   name: 'Knot',
   description: 'Khipu Knot',
   fields: () => getFields({
     model: models.Knot,
     additionalFields: {
+      knotType: {
+        type: KnotType,
+        resolve (knot) {
+          return models.KnotTypeDc.findOne({ where: { type_code: knot.type_code } })
+        }
+      },
       cord: {
         type: Cord,
         resolve (knot) {
@@ -120,6 +214,52 @@ const KhipuNote = new GraphQLObjectType({
   fields: () => getFields({ model: models.KhipuNote })
 })
 
+const CordStructure = new GraphQLObjectType({
+  name: 'CordStructure',
+  fields: () => getFields({
+    model: models.StructureDc
+  })
+})
+
+const PrimaryCordNotes = new GraphQLObjectType({
+  name: 'PrimaryCordNotes',
+  fields: () => ({
+    primaryCordId: {
+      type: GraphQLString,
+      resolve (primaryCordNotes) {
+        return primaryCordNotes.pcord_id
+      }
+    },
+    notes: {
+      type: GraphQLString,
+      resolve (primaryCordNotes) {
+        return primaryCordNotes.notes
+      }
+    }
+  })
+})
+
+const Termination = new GraphQLObjectType({
+  name: 'Termination',
+  fields: () => getFields({
+    model: models.TerminationDc
+  })
+})
+
+const Beginning = new GraphQLObjectType({
+  name: 'Beginning',
+  fields: () => getFields({
+    model: models.BeginningDc
+  })
+})
+
+const Fiber = new GraphQLObjectType({
+  name: 'Fiber',
+  fields: () => getFields({
+    model: models.FiberDc
+  })
+})
+
 const PrimaryCord = new GraphQLObjectType({
   name: 'PrimaryCord',
   fields: () => getFields({
@@ -129,6 +269,36 @@ const PrimaryCord = new GraphQLObjectType({
         type: new GraphQLList(Cord),
         resolve (primaryCord) {
           return primaryCord.getCords()
+        }
+      },
+      fiber: {
+        type: Fiber,
+        resolve (primaryCord) {
+          return models.FiberDc.findOne({ where: { fiber_cd: primaryCord.fiber } })
+        }
+      },
+      termination: {
+        type: Termination,
+        resolve (primaryCord) {
+          return models.TerminationDc.findOne({ where: { termination_dc: primaryCord.termination } })
+        }
+      },
+      beginning: {
+        type: Beginning,
+        resolve (primaryCord) {
+          return models.BeginningDc.findOne({ where: { beginning_dc: primaryCord.beginning } })
+        }
+      },
+      notes: {
+        type: PrimaryCordNotes,
+        resolve (primaryCord) {
+          return models.PcordNotes.findOne({ where: { pcord_id: primaryCord.id } })
+        }
+      },
+      structure: {
+        type: CordStructure,
+        resolve (primaryCord) {
+          return models.StructureDc.findOne({ where: { structure_dc: primaryCord.struct } })
         }
       },
       cordClusters: {
@@ -156,12 +326,34 @@ const CordCluster = new GraphQLObjectType({
   })
 })
 
+const Archive = new GraphQLObjectType({
+  name: 'Archive',
+  description: 'Khipu Archive',
+  fields: () => getFields({
+    model: models.ArchiveDc,
+    additionalFields: {
+      khipus: {
+        type: new GraphQLList(Khipu),
+        resolve (archive) {
+          return archive.getKhipus()
+        }
+      }
+    }
+  })
+})
+
 const Khipu = new GraphQLObjectType({
   name: 'Khipu',
   description: 'Khipu',
   fields: () => getFields({
     model: models.Khipu,
     additionalFields: {
+      archive: {
+        type: Archive,
+        resolve (khipu) {
+          return khipu.getArchive()
+        }
+      },
       cords: {
         type: new GraphQLList(Cord),
         resolve (khipu) {
@@ -171,7 +363,7 @@ const Khipu = new GraphQLObjectType({
       primaryCord: {
         type: PrimaryCord,
         resolve (khipu) {
-          return models.PrimaryCord.findOne({ where: { khipu_id: khipu.id } })
+          return khipu.getPrimaryCord()
         }
       },
       cordClusters: {
@@ -212,57 +404,63 @@ const Query = new GraphQLObjectType({
   fields: () => ({
     colors: {
       args: {
-        'id': { type: GraphQLInt }
+        'id': { type: GraphQLInt },
+        'limit': { type: GraphQLInt }
       },
       type: new GraphQLList(Color),
       resolve (root, args) {
-        return models.ColorDc.findAll({ where: args })
+        return models.ColorDc.findAll(getArgs(args))
       }
     },
     cordColors: {
       args: {
-        'id': { type: GraphQLInt }
+        'id': { type: GraphQLInt },
+        'limit': { type: GraphQLInt }
       },
       type: new GraphQLList(CordColor),
       resolve (root, args) {
-        return models.CordColor.findAll({ where: args })
+        return models.CordColor.findAll(getArgs(args))
       }
     },
     khipus: {
       type: new GraphQLList(Khipu),
       args: {
-        'id': { type: GraphQLInt }
+        'id': { type: GraphQLInt },
+        'limit': { type: GraphQLInt }
       },
       resolve (root, args) {
-        return models.Khipu.findAll({ where: args })
+        return models.Khipu.findAll(getArgs(args))
       }
     },
     canutos: {
       type: new GraphQLList(Canuto),
       args: {
-        'id': { type: GraphQLInt }
+        'id': { type: GraphQLInt },
+        'limit': { type: GraphQLInt }
       },
       resolve (root, args) {
-        return models.Canuto.findAll({ where: args })
+        return models.Canuto.findAll(getArgs(args))
       }
     },
     knots: {
       type: new GraphQLList(Knot),
       args: {
         'id': { type: GraphQLInt },
-        'knot_cluster_id': { type: GraphQLInt }
+        'knot_cluster_id': { type: GraphQLInt },
+        'limit': { type: GraphQLInt }
       },
       resolve (root, args) {
-        return models.Knot.findAll({ where: args })
+        return models.Knot.findAll(getArgs(args))
       }
     },
     knotClusters: {
       type: new GraphQLList(KnotCluster),
       args: {
-        'id': { type: GraphQLInt }
+        'id': { type: GraphQLInt },
+        'limit': { type: GraphQLInt }
       },
       resolve (root, args) {
-        return models.KnotCluster.findAll({ where: args })
+        return models.KnotCluster.findAll(getArgs(args))
       }
     },
     cordClusters: {
@@ -270,30 +468,33 @@ const Query = new GraphQLObjectType({
       args: {
         'id': { type: GraphQLInt },
         'khipu_id': { type: GraphQLInt },
-        'primary_cord_id': { type: GraphQLInt }
+        'primary_cord_id': { type: GraphQLInt },
+        'limit': { type: GraphQLInt }
       },
       resolve (root, args) {
-        return models.CordCluster.findAll({ where: args })
+        return models.CordCluster.findAll(getArgs(args))
       }
     },
     cords: {
       args: {
         'id': { type: GraphQLInt },
-        'khipu_id': { type: GraphQLInt }
+        'khipu_id': { type: GraphQLInt },
+        'limit': { type: GraphQLInt }
       },
       type: new GraphQLList(Cord),
       resolve (root, args) {
-        return models.Cord.findAll({ where: args })
+        return models.Cord.findAll(getArgs(args))
       }
     },
     primaryCords: {
       args: {
         'id': { type: GraphQLInt },
-        'khipu_id': { type: GraphQLInt }
+        'khipu_id': { type: GraphQLInt },
+        'limit': { type: GraphQLInt }
       },
       type: new GraphQLList(PrimaryCord),
       resolve (root, args) {
-        return models.PrimaryCord.findAll({ where: args })
+        return models.PrimaryCord.findAll(getArgs(args))
       }
     }
   })

@@ -62,7 +62,7 @@ Object.keys(db).forEach(modelName => {
 // -- Knot
 // -- KnotCluster
 // -- KnotTypeDc
-// -- PcordNotes
+// -- PrimaryCordNotes
 // -- PigmentationDc
 // -- PrimaryCord
 // -- PrimaryCordAttach
@@ -74,9 +74,24 @@ Object.keys(db).forEach(modelName => {
 //
 // -- Associations
 
+// Cord <-- CordColor
+db.CordColor.belongsTo(db.Cord)
+
+// Museum <-- Khipu
+db.Khipu.belongsTo(db.Museum)
+db.Museum.hasMany(db.Khipu, { as: 'Khipus' })
+
+// KhipuProvenance <-- Khipu
+db.Khipu.belongsTo(db.KhipuProvenance)
+db.KhipuProvenance.hasMany(db.Khipu, { as: 'Khipus' })
+
 // Khipu <--- Cords
 db.Cord.belongsTo(db.Khipu)
 db.Khipu.hasMany(db.Cord, { as: 'Cords' })
+
+// Archive <-- Khipus
+db.Khipu.belongsTo(db.ArchiveDc)
+db.ArchiveDc.hasMany(db.Khipu, { as: 'Khipus' })
 
 // Khipu <-- Khipu Notes
 db.KhipuNote.belongsTo(db.Khipu)
@@ -98,12 +113,17 @@ db.CordCluster.hasMany(db.Cord, { as: 'Cords' })
 db.Knot.belongsTo(db.Cord)
 db.Cord.hasMany(db.Knot, { as: 'Knots' })
 
+// Cord <-- KnotCluster
+db.KnotCluster.belongsTo(db.Cord)
+db.Cord.hasMany(db.KnotCluster, { as: 'KnotCluster' })
+
 // Primary Cord <-- Cords
 db.Cord.belongsTo(db.PrimaryCord)
 db.PrimaryCord.hasMany(db.Cord, { as: 'Cords' })
 
-// db.PrimaryCord.belongsTo(db.Khipu)
-// db.Khipu.hasOne(db.PrimaryCord, { as: 'PrimaryCord' })
+// Khipu <-- Primary Cord
+db.PrimaryCord.belongsTo(db.Khipu)
+db.Khipu.hasOne(db.PrimaryCord, { as: 'PrimaryCord' })
 
 // Knot Cluster <-- Knots
 db.Knot.belongsTo(db.KnotCluster)
