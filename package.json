@@ -23,6 +23,7 @@
     "graphql-sequelize": "^0.23.0",
     "lodash": "^4.11.1",
     "mysql": "^2.10.2",
-    "sequelize": "^3.21.0"
+    "sequelize": "^3.21.0",
+    "khipu-models": "git://github.com/rippedspine/khipu-models.git#master"
   }
 }
