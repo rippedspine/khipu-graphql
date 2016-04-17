@@ -12,16 +12,16 @@
   "dependencies": {
     "babel-preset-node5": "^11.0.1",
     "camelcase-keys": "^2.1.0",
-    "eslint": "^2.7.0",
+    "eslint": "^2.8.0",
     "eslint-plugin-babel": "^3.2.0",
     "eslint-plugin-promise": "^1.1.0",
     "eslint-plugin-standard": "^1.3.2",
     "express": "^4.13.4",
-    "express-graphql": "^0.5.0",
+    "express-graphql": "^0.5.1",
     "graphiql": "^0.7.0",
     "graphql": "^0.5.0",
-    "graphql-sequelize": "^0.22.0",
-    "lodash": "^4.9.0",
+    "graphql-sequelize": "^0.23.0",
+    "lodash": "^4.11.1",
     "mysql": "^2.10.2",
     "sequelize": "^3.21.0"
   }
